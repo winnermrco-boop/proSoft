@@ -1,0 +1,174 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <queue>
+
+using namespace std;
+
+int main()
+{
+    // Read rabbits coordinates
+    int n_rabbits;
+    cin >> n_rabbits; cin.ignore();
+    
+    vector<pair<int, int>> rabbits;
+    for (int i = 0; i < n_rabbits; i++) {
+        int x, y;
+        cin >> x >> y; cin.ignore();
+        rabbits.push_back({x, y});
+    }
+
+    // game loop
+    while (1) {
+        int n_snake;
+        cin >> n_snake; cin.ignore();
+        
+        // Read snake coordinates
+        vector<pair<int, int>> snake;
+        for (int i = 0; i < n_snake; i++) {
+            int x, y;
+            cin >> x >> y; cin.ignore();
+            snake.push_back({x, y});
+        }
+
+        int headX = snake[0].first;
+        int headY = snake[0].second;
+        
+        // Find ALL rabbits and sort by distance
+        vector<pair<int, pair<int, int>>> rabbit_distances;
+        
+        for (auto& rabbit : rabbits) {
+            int dist = abs(headX - rabbit.first) + abs(headY - rabbit.second);
+            rabbit_distances.push_back({dist, rabbit});
+        }
+        
+        // Sort rabbits by distance (closest first)
+        sort(rabbit_distances.begin(), rabbit_distances.end());
+        
+        // Try to find path to each rabbit starting from closest
+        pair<int, int> target_move = {-1, -1};
+        
+        for (auto& rabbit_data : rabbit_distances) {
+            auto rabbit = rabbit_data.second;
+            
+            // Use BFS to find safe path to rabbit
+            queue<pair<int, int>> q;
+            vector<vector<bool>> visited(54, vector<bool>(96, false));
+            vector<vector<pair<int, int>>> parent(54, vector<pair<int, int>>(96, {-1, -1}));
+            
+            // Mark snake body as visited
+            for (auto& body_part : snake) {
+                if (body_part.second >= 0 && body_part.second < 54 && body_part.first >= 0 && body_part.first < 96) {
+                    visited[body_part.second][body_part.first] = true;
+                }
+            }
+            
+            // Possible moves from current position
+            vector<pair<int, int>> directions = {
+                {0, -1},    // up
+                {0, 1},     // down  
+                {1, 0},     // right
+                {-1, 0}     // left
+            };
+            
+            // Check initial valid moves
+            for (auto& dir : directions) {
+                int newX = headX + dir.first;
+                int newY = headY + dir.second;
+                
+                // Check boundaries
+                if (newX < 0 || newX >= 96 || newY < 0 || newY >= 54) continue;
+                
+                // Check if not visited (not part of snake body)
+                if (!visited[newY][newX]) {
+                    q.push({newX, newY});
+                    visited[newY][newX] = true;
+                    parent[newY][newX] = {headX, headY};
+                }
+            }
+            
+            // BFS to find path to rabbit
+            bool found_path = false;
+            while (!q.empty()) {
+                auto current = q.front();
+                q.pop();
+                
+                int x = current.first;
+                int y = current.second;
+                
+                // Found the rabbit!
+                if (x == rabbit.first && y == rabbit.second) {
+                    // Backtrack to find first move
+                    while (parent[y][x].first != headX || parent[y][x].second != headY) {
+                        int prevX = parent[y][x].first;
+                        int prevY = parent[y][x].second;
+                        x = prevX;
+                        y = prevY;
+                    }
+                    target_move = {x, y};
+                    found_path = true;
+                    break;
+                }
+                
+                // Explore neighbors
+                for (auto& dir : directions) {
+                    int newX = x + dir.first;
+                    int newY = y + dir.second;
+                    
+                    if (newX < 0 || newX >= 96 || newY < 0 || newY >= 54) continue;
+                    if (visited[newY][newX]) continue;
+                    
+                    visited[newY][newX] = true;
+                    parent[newY][newX] = {x, y};
+                    q.push({newX, newY});
+                }
+            }
+            
+            if (found_path) {
+                break;
+            }
+        }
+        
+        // If no path found to any rabbit, use fallback strategy
+        if (target_move.first == -1) {
+            // Find any safe move
+            vector<pair<int, int>> directions = {
+                {headX, headY - 1},     // up
+                {headX, headY + 1},     // down  
+                {headX + 1, headY},     // right
+                {headX - 1, headY}      // left
+            };
+            
+            for (auto& move : directions) {
+                int newX = move.first;
+                int newY = move.second;
+                
+                // Check boundaries
+                if (newX < 0 || newX >= 96 || newY < 0 || newY >= 54) continue;
+                
+                // Check collision with snake body
+                bool collision = false;
+                for (int i = 1; i < snake.size(); i++) {
+                    if (snake[i].first == newX && snake[i].second == newY) {
+                        collision = true;
+                        break;
+                    }
+                }
+                
+                if (!collision) {
+                    target_move = move;
+                    break;
+                }
+            }
+            
+            // If still no move, use first direction (game over)
+            if (target_move.first == -1) {
+                target_move = {headX, headY - 1};
+            }
+        }
+        
+        cout << target_move.first << " " << target_move.second << endl;
+    }
+}
