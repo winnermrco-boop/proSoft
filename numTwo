@@ -1,0 +1,25 @@
+#include <stdbool.h>
+#include <stdio.h>
+
+int main()
+{
+    // game loop
+    while (1) {
+        int x;
+        int y;
+        int next_checkpoint_x;
+        int next_checkpoint_y;
+        scanf("%d%d%d%d", &x, &y, &next_checkpoint_x, &next_checkpoint_y);
+
+        // Write an action using printf(). DON'T FORGET THE TRAILING \n
+        // To debug: fprintf(stderr, "Debug messages...\n");
+
+        // Edit this line to output the target position
+        // and thrust (0 <= thrust <= 100)
+        // i.e.: "x y thrust"
+        
+        // Increase thrust to maximum (100)
+        printf("%d %d 100\n", next_checkpoint_x, next_checkpoint_y);
+    }
+    return 0;
+}
